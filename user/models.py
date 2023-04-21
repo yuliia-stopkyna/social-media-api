@@ -55,9 +55,7 @@ def user_image_file_path(instance, filename):
 class User(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True)
-    first_name = models.CharField(_("first name"), max_length=150, blank=False)
-    last_name = models.CharField(_("last name"), max_length=150, blank=False)
-    bio = models.TextField()
+    bio = models.TextField(null=True, blank=True)
     picture = models.ImageField(null=True, blank=True, upload_to=user_image_file_path)
     country = models.CharField(max_length=100, null=True, blank=True)
 
@@ -68,8 +66,12 @@ class User(AbstractUser):
 
 
 class UserFollower(models.Model):
-    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followers")
-    follower_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followings")
+    user_id = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followers"
+    )
+    follower_id = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followings"
+    )
 
     class Meta:
         unique_together = ("user_id", "follower_id")
