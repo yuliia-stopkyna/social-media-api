@@ -16,7 +16,16 @@ class UserCreateSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        fields = ("id", "email", "password", "first_name", "last_name", "bio", "country", "picture")
+        fields = (
+            "id",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+            "bio",
+            "country",
+            "picture",
+        )
         extra_kwargs = {"password": {"write_only": True, "min_length": 8}}
 
     def update(self, instance, validated_data):
@@ -28,3 +37,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+
+
+class UserReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("id", "first_name", "last_name", "bio", "country", "picture")
