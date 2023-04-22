@@ -66,15 +66,15 @@ class User(AbstractUser):
 
 
 class UserFollower(models.Model):
-    user_id = models.ForeignKey(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followers"
     )
-    follower_id = models.ForeignKey(
+    follower = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="followings"
     )
 
     class Meta:
-        unique_together = ("user_id", "follower_id")
+        unique_together = ("user", "follower")
 
     def __str__(self) -> str:
-        return f"User {self.follower_id} follows user {self.user_id}"
+        return f"User {self.follower} follows user {self.user}"

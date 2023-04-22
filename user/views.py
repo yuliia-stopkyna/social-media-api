@@ -1,24 +1,43 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
-from rest_framework import generics, viewsets, mixins
+from drf_spectacular.utils import extend_schema
+from rest_framework import generics, viewsets, mixins, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from user.serializers import UserCreateSerializer, UserUpdateSerializer, UserReadSerializer
+from user.models import UserFollower
+from user.serializers import (
+    UserCreateSerializer,
+    UserUpdateSerializer,
+    UserReadSerializer,
+    UserFollowSerializer,
+    UserReadProfileSerializer,
+)
 
 
 class CreateUserView(generics.CreateAPIView):
     serializer_class = UserCreateSerializer
 
 
-class ManageUserView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserUpdateSerializer
+class ManageUserView(
+    mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
+):
     permission_classes = (IsAuthenticated,)
 
-    def get_object(self):
+    def get_object(self) -> settings.AUTH_USER_MODEL:
         return self.request.user
 
+    def get_serializer_class(self) -> UserReadProfileSerializer | UserUpdateSerializer:
+        if self.action == "retrieve":
+            return UserReadProfileSerializer
+        return UserUpdateSerializer
 
-class ReadUserView(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+
+class ReadUserView(
+    mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+):
     serializer_class = UserReadSerializer
     permission_classes = (IsAuthenticated,)
 
@@ -40,3 +59,50 @@ class ReadUserView(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.Ge
                 queryset = queryset.filter(country__icontains=country)
 
         return queryset
+
+
+class UserFollowView(viewsets.GenericViewSet):
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(methods=["POST"], responses={200: UserReadProfileSerializer})
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="follow",
+        url_name="user-follow",
+        permission_classes=[IsAuthenticated],
+    )
+    def follow(self, request, pk=None) -> Response:
+        """Endpoint for following user. Returns the profile data of the request user"""
+        user_id = self.kwargs.get("pk")
+        follower_id = self.request.user.id
+
+        if user_id != follower_id:
+            data = {"user": user_id, "follower": follower_id}
+            serializer = UserFollowSerializer(data=data)
+
+            if serializer.is_valid():
+                serializer.save()
+                read_serializer = UserReadProfileSerializer(self.request.user)
+                return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            data={"message": "User can't follow self"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @extend_schema(methods=["POST"], responses={200: UserReadProfileSerializer})
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="unfollow",
+        url_name="user-unfollow",
+        permission_classes=[IsAuthenticated],
+    )
+    def unfollow(self, request, pk=None) -> Response:
+        """Endpoint for unfollowing user. Returns the profile data of the request user"""
+        user_id = self.kwargs.get("pk")
+        follower_id = self.request.user.id
+        UserFollower.objects.filter(user_id=user_id, follower_id=follower_id).delete()
+        read_serializer = UserReadProfileSerializer(self.request.user)
+        return Response(read_serializer.data, status=status.HTTP_200_OK)

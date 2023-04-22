@@ -1,6 +1,34 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from user.models import UserFollower
+
+
+class UserFollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFollower
+        fields = ("id", "user", "follower")
+
+
+class UserFollowingsSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    user_full_name = serializers.CharField(source="user.get_full_name", read_only=True)
+
+    class Meta:
+        model = UserFollower
+        fields = ("user_id", "user_full_name")
+
+
+class UserFollowersSerializer(serializers.ModelSerializer):
+    follower_id = serializers.IntegerField(source="follower.id", read_only=True)
+    follower_full_name = serializers.CharField(
+        source="follower.get_full_name", read_only=True
+    )
+
+    class Meta:
+        model = UserFollower
+        fields = ("follower_id", "follower_full_name")
+
 
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,3 +71,21 @@ class UserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ("id", "first_name", "last_name", "bio", "country", "picture")
+
+
+class UserReadProfileSerializer(serializers.ModelSerializer):
+    followings = UserFollowingsSerializer(many=True, read_only=True)
+    followers = UserFollowersSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "bio",
+            "country",
+            "picture",
+            "followings",
+            "followers",
+        )
