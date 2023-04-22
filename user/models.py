@@ -64,6 +64,9 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    def __str__(self) -> str:
+        return self.get_full_name()
+
 
 class UserFollower(models.Model):
     user = models.ForeignKey(
