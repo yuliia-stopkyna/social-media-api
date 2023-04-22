@@ -1,15 +1,19 @@
 from django.db.models import QuerySet, Q
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, mixins
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework import viewsets, mixins, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.response import Response
 
-from post.models import Post, Comment
+from post.models import Post, Comment, Like
 from post.permissions import IsAuthor
 from post.serializers import (
     PostListSerializer,
     PostDetailSerializer,
     PostSerializer,
     CommentSerializer,
+    LikeSerializer,
 )
 
 
@@ -19,13 +23,15 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostListSerializer
         if self.action == "retrieve":
             return PostDetailSerializer
+        if self.action == "like":
+            return LikeSerializer
         return PostSerializer
 
     def get_queryset(self) -> QuerySet:
         queryset = Post.objects.prefetch_related("likes", "comments")
         hashtag = self.request.query_params.get("hashtag")
 
-        if self.action in ("retrieve", "list"):
+        if self.action in ("retrieve", "list", "like", "unlike"):
             queryset = queryset.filter(
                 Q(author=self.request.user)
                 | Q(author__id__in=self.request.user.followings.values("user_id"))
@@ -45,6 +51,59 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @extend_schema(
+        methods=["POST"], request=None, responses={200: PostDetailSerializer}
+    )
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="like",
+        url_name="post-like",
+    )
+    def like(self, request, pk=None) -> Response:
+        """Endpoint for post like. Returns the post detail"""
+        post = self.get_object()
+        user = self.request.user
+        serializer = LikeSerializer(
+            data={"post": post.id, "user": user.id},
+            initial={"post": post, "user": user},
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            read_serializer = PostDetailSerializer(self.get_object())
+            return Response(read_serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        methods=["POST"], request=None, responses={200: PostDetailSerializer}
+    )
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="unlike",
+        url_name="post-unlike",
+    )
+    def unlike(self, request, pk=None) -> Response:
+        """Endpoint for post unlike. Returns the post detail"""
+        post = self.get_object()
+        user = self.request.user
+        Like.objects.filter(post=post, user=user).delete()
+        read_serializer = PostDetailSerializer(self.get_object())
+        return Response(read_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "hashtag",
+                type=str,
+                description="Filter posts by hashtag",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class CommentViewSet(

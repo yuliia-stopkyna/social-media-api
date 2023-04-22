@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -60,11 +60,35 @@ class ReadUserView(
 
         return queryset
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "first_name",
+                type=str,
+                description="Filter users by first name",
+            ),
+            OpenApiParameter(
+                "last_name",
+                type=str,
+                description="Filter users by last name",
+            ),
+            OpenApiParameter(
+                "country",
+                type=str,
+                description="Filter users by country",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
 
 class UserFollowView(viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(methods=["POST"], responses={200: UserReadProfileSerializer})
+    @extend_schema(
+        methods=["POST"], request=None, responses={200: UserReadProfileSerializer}
+    )
     @action(
         methods=["POST"],
         detail=True,
@@ -91,7 +115,9 @@ class UserFollowView(viewsets.GenericViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @extend_schema(methods=["POST"], responses={200: UserReadProfileSerializer})
+    @extend_schema(
+        methods=["POST"], request=None, responses={200: UserReadProfileSerializer}
+    )
     @action(
         methods=["POST"],
         detail=True,
