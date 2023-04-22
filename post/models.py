@@ -61,4 +61,4 @@ class Comment(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"Comment to post {self.post.id} by {self.user}"
+        return f"Comment to post {self.post.id} by {self.author}"
