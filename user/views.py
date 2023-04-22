@@ -4,6 +4,7 @@ from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, viewsets, mixins, status
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -35,14 +36,20 @@ class ManageUserView(
         return UserUpdateSerializer
 
 
+class UserPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 100
+
+
 class ReadUserView(
     mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = UserReadSerializer
     permission_classes = (IsAuthenticated,)
+    pagination_class = UserPagination
 
     def get_queryset(self) -> QuerySet:
-        queryset = get_user_model().objects.all()
+        queryset = get_user_model().objects.prefetch_related("followings", "followers")
 
         if self.action == "list":
             first_name = self.request.query_params.get("first_name")

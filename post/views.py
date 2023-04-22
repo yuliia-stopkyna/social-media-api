@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.response import Response
 
@@ -17,7 +18,14 @@ from post.serializers import (
 )
 
 
+class PostPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 100
+
+
 class PostViewSet(viewsets.ModelViewSet):
+    pagination_class = PostPagination
+
     def get_serializer_class(self) -> PostSerializer:
         if self.action == "list":
             return PostListSerializer
@@ -66,8 +74,7 @@ class PostViewSet(viewsets.ModelViewSet):
         post = self.get_object()
         user = self.request.user
         serializer = LikeSerializer(
-            data={"post": post.id, "user": user.id},
-            initial={"post": post, "user": user},
+            data={"post": post.id, "user": user.id}
         )
 
         if serializer.is_valid():
@@ -106,6 +113,11 @@ class PostViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
 
+class CommentPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 100
+
+
 class CommentViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -114,6 +126,7 @@ class CommentViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = CommentSerializer
+    pagination_class = CommentPagination
     lookup_field = "id"
 
     def perform_create(self, serializer):
