@@ -17,13 +17,19 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self) -> QuerySet:
         queryset = Post.objects.prefetch_related("likes", "comments")
+        hashtag = self.request.query_params.get("hashtag")
+
         if self.action in ("retrieve", "list"):
             queryset = queryset.filter(
                 Q(author=self.request.user)
                 | Q(author__id__in=self.request.user.followings.values("user_id"))
             )
+
+            if hashtag:
+                queryset = queryset.filter(hashtag__icontains=hashtag)
         else:
             queryset = queryset.filter(author=self.request.user)
+
         return queryset
 
     def get_permissions(self):
