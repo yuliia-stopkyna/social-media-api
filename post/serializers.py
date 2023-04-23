@@ -24,13 +24,19 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostScheduleSerializer(serializers.ModelSerializer):
-    schedule_time = serializers.DateTimeField(
-        required=True, source="created_at"
-    )
+    schedule_time = serializers.DateTimeField(required=True, source="created_at")
 
     class Meta:
         model = Post
-        fields = ("id", "schedule_time", "author", "content", "image", "hashtag", "is_displayed")
+        fields = (
+            "id",
+            "schedule_time",
+            "author",
+            "content",
+            "image",
+            "hashtag",
+            "is_displayed",
+        )
         read_only_fields = ("id", "author", "is_displayed")
 
     def create(self, validated_data):

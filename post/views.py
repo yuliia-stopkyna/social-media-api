@@ -40,7 +40,9 @@ class PostViewSet(viewsets.ModelViewSet):
         return PostSerializer
 
     def get_queryset(self) -> QuerySet:
-        queryset = Post.objects.prefetch_related("likes", "comments").filter(is_displayed=True)
+        queryset = Post.objects.prefetch_related("likes", "comments").filter(
+            is_displayed=True
+        )
         hashtag = self.request.query_params.get("hashtag")
 
         if self.action in ("retrieve", "list", "like", "unlike"):
@@ -127,10 +129,8 @@ class PostViewSet(viewsets.ModelViewSet):
             schedule_time = request.POST["schedule_time"]
             serializer.validated_data["author"] = request.user
             post = serializer.save()
-            schedule_post_display(
-                schedule_time=schedule_time,
-                post_id=post.id
-            )
+            schedule_post_display(schedule_time=schedule_time, post_id=post.id)
+            serializer.data["schedule_time"] = schedule_time
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
