@@ -126,11 +126,10 @@ class PostViewSet(viewsets.ModelViewSet):
         """Endpoint for scheduling posts in UTC"""
         serializer = PostScheduleSerializer(data=request.data)
         if serializer.is_valid():
-            schedule_time = request.POST["schedule_time"]
+            schedule_time = serializer.initial_data["schedule_time"]
             serializer.validated_data["author"] = request.user
             post = serializer.save()
             schedule_post_display(schedule_time=schedule_time, post_id=post.id)
-            serializer.data["schedule_time"] = schedule_time
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

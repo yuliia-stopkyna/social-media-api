@@ -39,9 +39,14 @@ class PostScheduleSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "author", "is_displayed")
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> Post:
         validated_data["is_displayed"] = False
         return Post.objects.create(**validated_data)
+
+    def to_representation(self, instance) -> dict:
+        data = super().to_representation(instance)
+        data["schedule_time"] = self.initial_data["schedule_time"]
+        return data
 
 
 class PostListSerializer(PostSerializer):
