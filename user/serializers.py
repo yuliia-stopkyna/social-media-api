@@ -70,13 +70,23 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 class UserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        fields = ("id", "first_name", "last_name", "bio", "country", "picture", "followers_number")
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "bio",
+            "country",
+            "picture",
+            "followers_number",
+        )
 
 
 class UserReadProfileSerializer(serializers.ModelSerializer):
     followings = UserFollowingsSerializer(many=True, read_only=True)
     followers = UserFollowersSerializer(many=True, read_only=True)
-    liked_posts = serializers.SlugRelatedField(many=True, source="likes", read_only=True, slug_field="id")
+    liked_posts = serializers.SlugRelatedField(
+        many=True, source="likes", read_only=True, slug_field="id"
+    )
 
     class Meta:
         model = get_user_model()
@@ -89,5 +99,5 @@ class UserReadProfileSerializer(serializers.ModelSerializer):
             "picture",
             "followings",
             "followers",
-            "liked_posts"
+            "liked_posts",
         )
