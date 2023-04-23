@@ -20,6 +20,7 @@ class Post(models.Model):
     image = models.ImageField(null=True, blank=True, upload_to=post_image_file_path)
     created_at = models.DateTimeField(auto_now_add=True)
     hashtag = models.CharField(max_length=100, null=True, blank=True)
+    is_displayed = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-created_at"]
