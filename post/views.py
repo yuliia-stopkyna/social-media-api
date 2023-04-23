@@ -15,7 +15,9 @@ from post.serializers import (
     PostSerializer,
     CommentSerializer,
     LikeSerializer,
+    PostScheduleSerializer,
 )
+from post.utils import schedule_post_display
 
 
 class PostPagination(PageNumberPagination):
@@ -33,10 +35,12 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostDetailSerializer
         if self.action == "like":
             return LikeSerializer
+        if self.action == "schedule":
+            return PostScheduleSerializer
         return PostSerializer
 
     def get_queryset(self) -> QuerySet:
-        queryset = Post.objects.prefetch_related("likes", "comments")
+        queryset = Post.objects.prefetch_related("likes", "comments").filter(is_displayed=True)
         hashtag = self.request.query_params.get("hashtag")
 
         if self.action in ("retrieve", "list", "like", "unlike"):
@@ -73,9 +77,7 @@ class PostViewSet(viewsets.ModelViewSet):
         """Endpoint for post like. Returns the post detail"""
         post = self.get_object()
         user = self.request.user
-        serializer = LikeSerializer(
-            data={"post": post.id, "user": user.id}
-        )
+        serializer = LikeSerializer(data={"post": post.id, "user": user.id})
 
         if serializer.is_valid():
             serializer.save()
@@ -111,6 +113,27 @@ class PostViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @action(
+        methods=["POST"],
+        detail=False,
+        url_path="schedule",
+        url_name="post-schedule",
+    )
+    def schedule(self, request, *args, **kwargs):
+        """Endpoint for scheduling posts in UTC"""
+        serializer = PostScheduleSerializer(data=request.data)
+        if serializer.is_valid():
+            schedule_time = request.POST["schedule_time"]
+            serializer.validated_data["author"] = request.user
+            post = serializer.save()
+            schedule_post_display(
+                schedule_time=schedule_time,
+                post_id=post.id
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CommentPagination(PageNumberPagination):
