@@ -17,7 +17,12 @@ urlpatterns = [
     path(
         "profile/",
         ManageUserView.as_view(
-            actions={"get": "retrieve", "put": "update", "patch": "partial_update"}
+            actions={
+                "get": "retrieve",
+                "put": "update",
+                "patch": "partial_update",
+                "delete": "destroy",
+            }
         ),
         name="manage",
     ),

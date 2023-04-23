@@ -23,7 +23,10 @@ class CreateUserView(generics.CreateAPIView):
 
 
 class ManageUserView(
-    mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
 ):
     permission_classes = (IsAuthenticated,)
 
