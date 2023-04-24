@@ -115,11 +115,11 @@ class UserFollowView(viewsets.GenericViewSet):
             data = {"user": user_id, "follower": follower_id}
             serializer = UserFollowSerializer(data=data)
 
-            if serializer.is_valid():
-                serializer.save()
-                read_serializer = UserReadProfileSerializer(self.request.user)
-                return Response(read_serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            read_serializer = UserReadProfileSerializer(self.request.user)
+            return Response(read_serializer.data, status=status.HTTP_200_OK)
+
         return Response(
             data={"message": "User can't follow self"},
             status=status.HTTP_400_BAD_REQUEST,
