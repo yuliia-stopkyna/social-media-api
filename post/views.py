@@ -81,11 +81,10 @@ class PostViewSet(viewsets.ModelViewSet):
         user = self.request.user
         serializer = LikeSerializer(data={"post": post.id, "user": user.id})
 
-        if serializer.is_valid():
-            serializer.save()
-            read_serializer = PostDetailSerializer(self.get_object())
-            return Response(read_serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        read_serializer = PostDetailSerializer(self.get_object())
+        return Response(read_serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         methods=["POST"], request=None, responses={200: PostDetailSerializer}
@@ -125,14 +124,12 @@ class PostViewSet(viewsets.ModelViewSet):
     def schedule(self, request, *args, **kwargs):
         """Endpoint for scheduling posts in UTC"""
         serializer = PostScheduleSerializer(data=request.data)
-        if serializer.is_valid():
-            schedule_time = serializer.initial_data["schedule_time"]
-            serializer.validated_data["author"] = request.user
-            post = serializer.save()
-            schedule_post_display(schedule_time=schedule_time, post_id=post.id)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        schedule_time = serializer.initial_data["schedule_time"]
+        serializer.validated_data["author"] = request.user
+        post = serializer.save()
+        schedule_post_display(schedule_time=schedule_time, post_id=post.id)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CommentPagination(PageNumberPagination):
